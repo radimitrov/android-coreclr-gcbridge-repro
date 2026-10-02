@@ -1,0 +1,20 @@
+<Project>
+  <!--
+    Stops MSBuild walking up into the parent repository's Directory.Build.props: this solution
+    must build exactly the same on a machine that has only this folder.
+
+    ReproRuntime selects the runtime: CoreCLR (default) or Mono. ReproNet selects the .NET version:
+    10 (default) or 11 (build with an 11 SDK, e.g. the local .dotnet11\dotnet.exe). ReproGen0Size
+    (CoreCLR only, hex bytes, e.g. 400000 = 4 MB) bakes DOTNET_GCgen0size into the APK. Each variant
+    gets its own obj/ and bin/ so they can be built back to back without invalidating each other.
+  -->
+  <PropertyGroup>
+    <ReproRuntime Condition="'$(ReproRuntime)' == ''">CoreCLR</ReproRuntime>
+    <ReproNet Condition="'$(ReproNet)' == ''">10</ReproNet>
+    <ReproVariant>$(ReproRuntime)</ReproVariant>
+    <ReproVariant Condition="'$(ReproNet)' != '10'">$(ReproVariant)-net$(ReproNet)</ReproVariant>
+    <ReproVariant Condition="'$(ReproGen0Size)' != ''">$(ReproVariant)-gen0-$(ReproGen0Size)</ReproVariant>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj\$(ReproVariant)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)bin\$(ReproVariant)\$(MSBuildProjectName)\</BaseOutputPath>
+  </PropertyGroup>
+</Project>

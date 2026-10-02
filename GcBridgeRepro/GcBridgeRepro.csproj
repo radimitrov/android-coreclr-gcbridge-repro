@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net$(ReproNet).0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <TrimMode>full</TrimMode>
+  </PropertyGroup>
+
+  <!--
+    The only differences between the APKs: the runtime, the .NET version (ReproNet), and optionally a
+    fixed gen0 budget. Everything else - code, workload, trimming, each runtime's own Release
+    defaults - is identical. Each variant gets its own package id so all can be installed side by
+    side and run alternately.
+  -->
+  <PropertyGroup Condition="'$(ReproRuntime)' == 'Mono'">
+    <UseMonoRuntime>true</UseMonoRuntime>
+    <ReproPackage>com.repro.gcbridge.mono</ReproPackage>
+    <DefineConstants>$(DefineConstants);REPRO_MONO</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(ReproRuntime)' != 'Mono'">
+    <UseMonoRuntime>false</UseMonoRuntime>
+    <ReproPackage>com.repro.gcbridge.coreclr</ReproPackage>
+  </PropertyGroup>
+  <!--
+    ReproNet=12 is the .NET 12 daily build, the first runtime with dotnet/runtime#131952. Main still calls
+    its current TFM net11.0 (dotnet/android main ships only net11.0-android on the .NET 12 SDK band), and
+    the daily SDK maps net11.0 to its own 12.0 runtime pack - so this is net11.0-android built with the
+    .NET 12 SDK. The result line's framework= field confirms which runtime actually ran.
+  -->
+  <PropertyGroup Condition="'$(ReproNet)' == '12'">
+    <TargetFramework>net11.0-android</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ReproPackage Condition="'$(ReproNet)' != '10'">$(ReproPackage).n$(ReproNet)</ReproPackage>
+    <ReproPackage Condition="'$(ReproGen0Size)' != ''">$(ReproPackage).g$(ReproGen0Size)</ReproPackage>
+    <ApplicationId>$(ReproPackage)</ApplicationId>
+  </PropertyGroup>
+
+  <!--
+    Optional CoreCLR variant with a fixed gen0 budget (DOTNET_GCgen0size, hex bytes; env-only, it has
+    no runtimeconfig name). 400000 = 4 MB matches Mono's default nursery, which isolates the budget
+    from everything else that differs between the runtimes.
+  -->
+  <Target Name="ReproWriteGen0Environment" BeforeTargets="PrepareForBuild" Condition="'$(ReproGen0Size)' != ''">
+    <WriteLinesToFile File="$(BaseIntermediateOutputPath)repro-environment.txt" Lines="DOTNET_GCgen0size=$(ReproGen0Size)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <AndroidEnvironment Include="$(BaseIntermediateOutputPath)repro-environment.txt" />
+    </ItemGroup>
+  </Target>
+</Project>

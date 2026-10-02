@@ -1,0 +1,3 @@
+<Project>
+  <!-- Intentionally empty: stops MSBuild picking up the parent repository's Directory.Build.targets. -->
+</Project>

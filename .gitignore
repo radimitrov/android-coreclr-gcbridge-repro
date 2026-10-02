@@ -1,0 +1,7 @@
+bin/
+obj/
+results/
+.dotnet11/
+.dotnet12/
+.symbols/
+.claude/settings.local.json
